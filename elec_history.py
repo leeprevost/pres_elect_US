@@ -3,6 +3,8 @@ import numpy as np
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 import requests
+from scipy.stats import zscore
+
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
 pres_history = r"C:\Users\lee\Downloads\countypres_2000-2020.csv"
@@ -56,6 +58,26 @@ fips_key = fips_key.join(pd.cut(rec_total_votes, bins = l_b, labels = ['xs', 's'
 
 democrat_over_time = pres_pt['DEMOCRAT'].unstack(0).join(fips_key).set_index(list(fips_key.columns), append = True)
 democrat_20_16_pct_change = democrat_over_time.pct_change(axis=1)[2020]
+democrat_20_16_pct_change.name = "pct_change"
+democrat_20_16_diff = democrat_over_time.diff(axis=1)[2020]
+democrat_20_16_diff.name = "vote_change"
+stats_00_16_pct_change = democrat_over_time.iloc[:, 0:-1].pct_change(axis=1).agg(['std', 'median'], axis=1)
+
+diff_16_20 = pd.concat([democrat_20_16_pct_change, democrat_20_16_diff], axis = 1)
+
+diff_16_20 = pd.concat({'2000_2016_pct_chg' : stats_00_16_pct_change, "2016_2020": diff_16_20}, axis=1)
+
+top_shift_16_20 =diff_16_20.iloc[:, -1].sort_values().nlargest(30)
+top_shift_16_20 = top_shift_16_20.reset_index(level=(0,1,4), drop = True).swaplevel().sort_values(ascending=True)
+top_shift_16_20.index = pd.MultiIndex.from_tuples(top_shift_16_20.index)
+total = top_shift_16_20.sum()
+format_total = "{:.2f}M".format(total / 1000000)
+ax = top_shift_16_20.plot(kind='barh', figsize= (15,20), title = "@leeprevost, source: Harvard Dataverse, 11/8/24")
+ax.figure.suptitle(f"Where Did Additional {format_total} Biden Votes Come From Since 2016?", size='xx-large')
+
+ax.figure.show()
+ax.figure.savefig("inc_20_demo_votes.jpg")
+
 democrat_20_16_pct_change.to_csv("democrat_2016_2020_pct_change.csv")
 margin_over_time = pres_pt.unstack(0)["MARGIN"].join(fips_key).set_index(list(fips_key.columns), append=True)
 margin_over_time.to_csv("margin_shift_over_time.csv")
