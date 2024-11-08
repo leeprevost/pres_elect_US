@@ -22,7 +22,7 @@ I do see some oddities at county levels particuarly in Georgia in 2020 in larger
 
 But, I also can't get to the 80M+ votes Zero Hedge chart shows for Democrats in 2020.  Am I missing something?
 
-![my img](US Pop Vote.jpg)
+![vote_distro](/us_pop_vote.jpg)
 
 
 
