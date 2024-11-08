@@ -1,7 +1,13 @@
 # PRESIDENTIAL Election Anaylsis (2020-    )
 by: Lee Prevost, 11/7/2024
 
+Inspired by the questions raised by this graph posted by ZeroHedge:
+![What Happend Here?](/zero_hedge.png)
+
+
 I did a very quick analysis using data sourced from: [Harvard Dataverse sourced via MIT Election Lab](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ)
+
+
 
 Used python pandas to read presidential election data from 2020.   Created margin column that shows vote margins as a percent of total vote such that:
 (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL
@@ -25,8 +31,6 @@ Corresponding labels
 - xl
 
 
-I do see some oddities at county levels particuarly in Georgia in 2020 in larger/suburban counties with large shifts to the left and in Texas in small/rural counties with large shifts to right.
-
 
 ![vote_distro](/us_pop_vote.jpg)
 
@@ -37,10 +41,16 @@ or rightward).
 
 But, as to raw counts of vote shifts, the top 30 counties represent 4.24M incremental votes over the 2016 election.
 
-
 ![Where Did Additional Biden Votes Come From Over 2016?](/inc_20_demo_votes.jpg)
 
+Some incremental questions:
+- Were there unusual (ie. unnatural) margin shifts at county level in 20 over 2000-2016?
+- Possible use of Benford or Zscore to flush those out.
+- Which counties lurched leftward or rightward in an unpredictable or unnatural way (20 over 00-16)?
 
+Looking at margin shift over time [margin_shift_over_time.csv](/margin_shift_over_time.csv):
+- looks very predictable.  Unusual patterns should be easy to spot
+- Zscore/Benford?
 
 
 
