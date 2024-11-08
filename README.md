@@ -24,3 +24,5 @@ But, I also can't get to the 80M+ votes Zero Hedge chart shows for Democrats in 
 
 ![my img](US Pop Vote.jpg)
 
+
+
