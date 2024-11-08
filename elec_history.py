@@ -2,9 +2,18 @@ import pandas as pd
 import numpy as np
 from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
+import requests
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
 pres_history = r"C:\Users\lee\Downloads\countypres_2000-2020.csv"
+
+
+#good source for 2024 reporting of state and county level results.
+nyt_api = "https://static01.nyt.com/elections-assets/2020/data/api/2020-11-03/national-map-page/national/president.json"
+
+
+r = requests.get(nyt_api)
+nyt = r.json()
 
 pres = pd.read_csv(pres_history)
 
@@ -25,7 +34,7 @@ def millions(x, pos):
 
 formatter = FuncFormatter(millions)
 
-pres_pt = pres.pivot_table(index = ["year", "county_fips"], columns = "party", values = 'candidatevotes')
+pres_pt = pres.pivot_table(index = ["year", "county_fips"], columns = "party", values = 'candidatevotes', aggfunc='sum')
 
 total_cts = pres_pt[['DEMOCRAT', "REPUBLICAN"]].unstack(0).sum().unstack(0)
 ax = total_cts.iloc[3:, :].plot(kind='bar', color=['blue', 'red'], title = "US Presidential Election Popular Vote: Democrat vs. Republican (millions)")
