@@ -1,4 +1,4 @@
-# PRESIDENTIAL Election Anaylsis (2020-    )
+# PRESIDENTIAL Election Anaylsis (2020-2024)
 by: Lee Prevost, 11/7/2024
 
 Inspired by the questions raised by this graph posted by ZeroHedge:
