@@ -33,7 +33,7 @@ ax.yaxis.set_major_formatter(formatter)
 ax.legend(loc='upper center', bbox_to_anchor=(0.4, 1.00),
           ncol=3, )
 ax.figure.show()
-ax.figure.savefig("US Pop Vote.jpg")
+ax.figure.savefig("us_pop_vote.jpg")
 
 pres_pt = pres_pt.assign(TOTAL = pres_pt.sum(axis=1))
 pres_pt = pres_pt.assign(MARGIN = (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL)
