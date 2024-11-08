@@ -66,6 +66,7 @@ stats_00_16_pct_change = democrat_over_time.iloc[:, 0:-1].pct_change(axis=1).agg
 diff_16_20 = pd.concat([democrat_20_16_pct_change, democrat_20_16_diff], axis = 1)
 
 diff_16_20 = pd.concat({'2000_2016_pct_chg' : stats_00_16_pct_change, "2016_2020": diff_16_20}, axis=1)
+diff_16_20.to_csv("diff_16_20.csv")
 
 top_shift_16_20 =diff_16_20.iloc[:, -1].sort_values().nlargest(30)
 top_shift_16_20 = top_shift_16_20.reset_index(level=(0,1,4), drop = True).swaplevel().sort_values(ascending=True)

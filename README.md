@@ -31,5 +31,8 @@ I do see some oddities at county levels particuarly in Georgia in 2020 in larger
 
 ![vote_distro](/us_pop_vote.jpg)
 
+Very specifically, I wanted to focus on where the incremental votes for Joe Biden came from over the Democrat vote counts
+in the 2016 election, by county.   The raw counts for those vote diffs are in: ![] 
+
 
 
