@@ -74,7 +74,7 @@ top_shift_16_20.index = pd.MultiIndex.from_tuples(top_shift_16_20.index)
 total = top_shift_16_20.sum()
 format_total = "{:.2f}M".format(total / 1000000)
 ax = top_shift_16_20.plot(kind='barh', figsize= (15,20), title = "@leeprevost, source: Harvard Dataverse, 11/8/24")
-ax.figure.suptitle(f"Where Did Additional {format_total} Biden Votes Come From Since 2016?", size='xx-large')
+ax.figure.suptitle(f"Where Did Additional {format_total} Biden Votes Come From Over 2016?", size='xx-large')
 
 ax.figure.show()
 ax.figure.savefig("inc_20_demo_votes.jpg")

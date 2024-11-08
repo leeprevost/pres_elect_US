@@ -1,4 +1,4 @@
-county_fips,state,state_po,county_name,size,2020
+county_fips,state,state_po,county_name,size,pct_change
 1001.0,ALABAMA,AL,AUTAUGA,m,0.2639824797843666
 1003.0,ALABAMA,AL,BALDWIN,l,0.3315635496803555
 1005.0,ALABAMA,AL,BARBOUR,m,-0.011291315951549974
