@@ -5,7 +5,7 @@ Inspired by the questions raised by this graph posted by ZeroHedge:
 ![What Happend Here?](/zero_hedge.png)
 
 First, I'll acknowledge a few things about the chart.  The y-axis range is bound limited which has the effect of 
-exaggerating the change over the years.   Also, others have pointed out correctly that the 2024 year doens't have complete data
+exaggerating the change over the years.   Also, others have pointed out correctly that the 2024 year doesn't have complete data
 yet.  
 
 Nevertheless, none of those critiques take away from the core rhetorical question: what explains the gap of votes for Biden 
@@ -19,19 +19,22 @@ This question intrigued me.
 Also, inspired by the recent NYT visuals that show the "shift left/right" vectors on a map:
 ![NYT vector map](/Gbuf-iqXcBAXUaB.jpg)
 
-data sourced from: [Harvard Dataverse sourced via MIT Election Lab](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ)
 
 
 ## Methods:
 1) used python pandas to read presidential election data from 2000.   
 2) Created margin column that shows vote margins as a percent of total vote such that: 
 
+data sourced from: [Harvard Dataverse sourced via MIT Election Lab](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ)
+
+
+## Vote Margins
 (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL
-negative values - county voted for democrat majority vote
-positive values -- county voted for republican majority vote
+negative values - democrat majority vote
+positive values -- republican majority vote
 
 ## Bins:
-I broke counties down into roughly equal vote blocks of 5 which resulted in the following size counts:
+Counties binned into roughly equal vote blocks of 5 which resulted in the following distribution (counts):
 
 | size   |   count |
 |:-------|--------:|
@@ -46,23 +49,22 @@ I broke counties down into roughly equal vote blocks of 5 which resulted in the 
 ![vote_distro](/us_pop_vote.jpg)
 
 Very specifically, I wanted to focus on where the incremental votes for Joe Biden came from over the Democrat vote counts
-in the 2016 election, by county.   The raw counts for those vote diffs are in: [diff_16_20.csv](/diff_16_20.csv).  Would 
-love to see some additional analysis on this including zscore or Benford so as to see unnatural shifts (lurch leftward
-or rightward).
+in the 2016 election, by county.   The raw counts for those vote diffs are in: [diff_16_20.csv](/diff_16_20.csv).  
 
-But, as to raw counts of vote shifts, the top 30 counties represent 4.24M incremental votes over the 2016 election.
+The top 30 counties whose votes shifted towards Biden include 4.24M incremental votes over the 2016 election.
 
 ![Where Did Additional Biden Votes Come From Over 2016?](/inc_20_demo_votes.jpg)
 
 Some incremental questions:
-- Were there unusual (ie. unnatural) margin shifts at county level in 20 over 2000-2016?
-- Possible use of Benford or Zscore to flush those out.
-- Which counties lurched leftward or rightward in an unpredictable or unnatural way (20 over 00-16)?
+~~- Were there unusual (ie. unnatural) margin shifts at county level in 20 over 2000-2016?~~
+- Possible use of Benford or Zscore to flush those out.  (@todo: Benford)
+~~- Which counties lurched leftward or rightward in an unpredictable or unnatural way (20 over 00-16)?~~
 
 ## Distribution of Margins By County
 Analyis to think about how to suss out the outliers, looking at what looks to be fairly normal distribution of margins across all
 3,156 counties.    This is a frequency count, not magnitude showing that most of US counties are steadily shifting right but 
 most of those are small.
+
 Shifting right -- positive
 Shifting left -- negative
 ![margin_distro](/distribution_vote_margins_county.jpg)
