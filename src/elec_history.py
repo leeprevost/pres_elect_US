@@ -7,6 +7,8 @@ from scipy.stats import zscore
 
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
+# direct link may be:  https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ# but requires accepting terms
+
 pres_history = r"C:\Users\lee\Downloads\countypres_2000-2020.csv"
 
 
