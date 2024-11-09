@@ -54,7 +54,14 @@ rec_total_votes = pres_pt.loc[[2016, 2020], "TOTAL"].unstack(0).max(axis=1).repl
 rec_total_votes.name = 'size'
 l_b = log_bins(rec_total_votes, 5)
 
-fips_key = fips_key.join(pd.cut(rec_total_votes, bins = l_b, labels = ['xs', 's', 'm', 'l', 'xl']))
+tot_votes = rec_total_votes.sum()
+tot_votes_bin = tot_votes // 5
+cum_sum = rec_total_votes.sort_values().cumsum()
+eq_vote_cuts = sorted(rec_total_votes.loc[((cum_sum % tot_votes_bin).pct_change() < 0)].sort_values().to_list() + [0])
+
+labels = ['xs', 's', 'm', "l", 'xl']
+fips_key = fips_key.join(pd.cut(rec_total_votes, bins = eq_vote_cuts, labels = ['xs', 's', 'm', 'l', 'xl'])).rename(columns = {'totvotes': "size"})
+
 
 democrat_over_time = pres_pt['DEMOCRAT'].unstack(0).join(fips_key).set_index(list(fips_key.columns), append = True)
 democrat_20_16_pct_change = democrat_over_time.pct_change(axis=1)[2020]
@@ -87,3 +94,24 @@ margin_shift = margin_over_time.diff(axis=1)
 
 margin_shift_20 = margin_shift[2020].to_frame().join(fips_key).sort_values(2020).set_index('size', append=True).swaplevel().sort_index().set_index(["state_po", 'county_name'], append=True).drop('state', axis=1)
 margin_shift_20.to_csv("margin_shift_20.csv")
+
+
+
+# finding outliers in 2020 election
+# need to fill margin for about 6 counties that have NaN values.   Fill with median for year
+year_medians = margin_over_time.median()
+margin_over_time.fillna(year_medians, inplace=True)
+
+# now perform zscore on entire dataset (axis=None)
+margin_zscores = zscore(margin_over_time.values, axis=None)
+
+# now id outliers defined as zscore > 2 (pos or neg)
+outlier_mask = abs(margin_zscores[:, -1]) > 2
+outliers = margin_over_time.loc[outlier_mask]
+outliers.to_csv("outliers_2020_vote.csv")
+
+# plot histogram of margins over time
+margin_over_time.hist(log=True, figsize = (12, 15))
+plt.suptitle("Distribution of Vote Margins By County\n(negative = D, positive = R)\n@leeprevost, source=Harvard Dataverse")
+plt.savefig("distribution_vote_margins_county.jpg")
+plt.show()
