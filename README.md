@@ -2,7 +2,7 @@
 by: Lee Prevost, 11/7/2024
 
 Inspired by the questions raised by this graph posted by ZeroHedge:
-![What Happend Here?](/zero_hedge.png)
+![What Happend Here?](/img/zero_hedge.png)
 
 First, I'll acknowledge a few things about the chart.  The y-axis range is bound limited which has the effect of 
 exaggerating the change over the years.   Also, others have pointed out correctly that the 2024 year doesn't have complete data
@@ -12,12 +12,12 @@ Nevertheless, none of those critiques take away from the core rhetorical questio
 over 2016 in the 2020 election?  
 
 The question:
-![vote change from 2016-2020](/the_question.png)
+![vote change from 2016-2020](/img/the_question.png)
 
 This question intrigued me.
 
 Also, inspired by the recent NYT visuals that show the "shift left/right" vectors on a map:
-![NYT vector map](/Gbuf-iqXcBAXUaB.jpg)
+![NYT vector map](/img/Gbuf-iqXcBAXUaB.jpg)
 
 
 
@@ -46,14 +46,14 @@ Counties binned into roughly equal vote blocks of 5 which resulted in the follow
 
 
 
-![vote_distro](/us_pop_vote.jpg)
+![vote_distro](/img/us_pop_vote.jpg)
 
 Very specifically, I wanted to focus on where the incremental votes for Joe Biden came from over the Democrat vote counts
-in the 2016 election, by county.   The raw counts for those vote diffs are in: [diff_16_20.csv](/diff_16_20.csv).  
+in the 2016 election, by county.   The raw counts for those vote diffs are in: [diff_16_20.csv](/tabs/diff_16_20.csv).  
 
 The top 30 counties whose votes shifted towards Biden include 4.24M incremental votes over the 2016 election.
 
-![Where Did Additional Biden Votes Come From Over 2016?](/inc_20_demo_votes.jpg)
+![Where Did Additional Biden Votes Come From Over 2016?](/img/inc_20_demo_votes.jpg)
 
 Some incremental questions:
 ~~- Were there unusual (ie. unnatural) margin shifts at county level in 20 over 2000-2016?~~
@@ -67,12 +67,12 @@ most of those are small.
 
 Shifting right -- positive
 Shifting left -- negative
-![margin_distro](/distribution_vote_margins_county.jpg)
+![margin_distro](/img/distribution_vote_margins_county.jpg)
 
 
 ## Outliers - 2020 Vote
 Outliers were determined by performing a zscore on entire margin_over_time dataset and selecting those 
-counties in 2020 that had an abs(zscore) > 2. This resulted in the [outliers_2020_vote.csv](/outliers_2020_vote.csv) tabulation.
+counties in 2020 that had an abs(zscore) > 2. This resulted in the [outliers_2020_vote.csv](/tabs/outliers_2020_vote.csv) tabulation.
 
 |                                     |        2000 |       2004 |       2008 |      2012 |      2016 |      2020 |
 |:------------------------------------|------------:|-----------:|-----------:|----------:|----------:|----------:|
@@ -246,7 +246,7 @@ over many years.
 Also, many counties mostly in the Southeast that shifted right but those were much smaller generally and also had been
 shifting right over time.  Did not see a sudden shift left or right looking at those trends over time.
 
-From dataset [margin_shift_over_time.csv](/margin_shift_over_time.csv)
+From dataset [margin_shift_over_time.csv](/tabs/margin_shift_over_time.csv)
 
 
 
