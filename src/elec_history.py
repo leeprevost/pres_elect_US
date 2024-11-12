@@ -4,6 +4,7 @@ from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 import requests
 from scipy.stats import zscore
+from benford import benford_error, digit_counts, benford_range
 
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
@@ -46,7 +47,7 @@ ax.yaxis.set_major_formatter(formatter)
 ax.legend(loc='upper center', bbox_to_anchor=(0.4, 1.00),
           ncol=3, )
 ax.figure.show()
-ax.figure.savefig("us_pop_vote.jpg")
+ax.figure.savefig("../img/us_pop_vote.jpg")
 
 pres_pt = pres_pt.assign(TOTAL = pres_pt.sum(axis=1))
 pres_pt = pres_pt.assign(MARGIN = (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL)
@@ -75,7 +76,7 @@ stats_00_16_pct_change = democrat_over_time.iloc[:, 0:-1].pct_change(axis=1).agg
 diff_16_20 = pd.concat([democrat_20_16_pct_change, democrat_20_16_diff], axis = 1)
 
 diff_16_20 = pd.concat({'2000_2016_pct_chg' : stats_00_16_pct_change, "2016_2020": diff_16_20}, axis=1)
-diff_16_20.to_csv("diff_16_20.csv")
+diff_16_20.to_csv("../tabs/diff_16_20.csv")
 
 top_shift_16_20 =diff_16_20.iloc[:, -1].sort_values().nlargest(30)
 top_shift_16_20 = top_shift_16_20.reset_index(level=(0,1,4), drop = True).swaplevel().sort_values(ascending=True)
@@ -86,16 +87,16 @@ ax = top_shift_16_20.plot(kind='barh', figsize= (15,20), title = "@leeprevost, s
 ax.figure.suptitle(f"Where Did Additional {format_total} Biden Votes Come From Over 2016?", size='xx-large')
 
 ax.figure.show()
-ax.figure.savefig("inc_20_demo_votes.jpg")
+ax.figure.savefig("../img/inc_20_demo_votes.jpg")
 
-democrat_20_16_pct_change.to_csv("democrat_2016_2020_pct_change.csv")
+democrat_20_16_pct_change.to_csv("../tabs/democrat_2016_2020_pct_change.csv")
 margin_over_time = pres_pt.unstack(0)["MARGIN"].join(fips_key).set_index(list(fips_key.columns), append=True)
-margin_over_time.to_csv("margin_shift_over_time.csv")
+margin_over_time.to_csv("../tabs/margin_shift_over_time.csv")
 
 margin_shift = margin_over_time.diff(axis=1)
 
 margin_shift_20 = margin_shift[2020].to_frame().join(fips_key).sort_values(2020).set_index('size', append=True).swaplevel().sort_index().set_index(["state_po", 'county_name'], append=True).drop('state', axis=1)
-margin_shift_20.to_csv("margin_shift_20.csv")
+margin_shift_20.to_csv("../tabs/margin_shift_20.csv")
 
 
 
@@ -110,10 +111,29 @@ margin_zscores = zscore(margin_over_time.values, axis=None)
 # now id outliers defined as zscore > 2 (pos or neg)
 outlier_mask = abs(margin_zscores[:, -1]) > 2
 outliers = margin_over_time.loc[outlier_mask]
-outliers.to_csv("outliers_2020_vote.csv")
+outliers.to_csv("../tabs/outliers_2020_vote.csv")
 
 # plot histogram of margins over time
 margin_over_time.hist(log=True, figsize = (12, 15))
 plt.suptitle("Distribution of Vote Margins By County\n(negative = D, positive = R)\n@leeprevost, source=Harvard Dataverse")
-plt.savefig("distribution_vote_margins_county.jpg")
+plt.savefig("../img/distribution_vote_margins_county.jpg")
 plt.show()
+
+# now do benford law calcs
+benford_mae = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values(ascending=False)
+benford_mae.name = "benford_mean_absolute_error"
+
+benford_raw = pres_pt.unstack(0).apply(digit_counts).assign(benford_expected=benford_range)
+benford_raw.to_csv("../tabs/benford_raw.csv")
+
+
+ax = benford_mae.dropna().sort_values().plot(kind='barh')
+plt.suptitle("Benford's Law US Presidential Elections (2000-2020)")
+plt.title("@leeprevost, source data: Harvard Dataverse, 11/12/2024", size='x-small')
+plt.tight_layout(pad=1.4)
+ax.set_xlabel("Mean Absolute Error")
+#plt.xticks(rotation=90, ha='right')
+plt.savefig("../img/benford_us_ele.jpg")
+ax.figure.show()
+
+

@@ -248,6 +248,37 @@ shifting right over time.  Did not see a sudden shift left or right looking at t
 
 From dataset [margin_shift_over_time.csv](/tabs/margin_shift_over_time.csv)
 
+## Benford's analysis
+To this point, I don't think I am seeing what I expected to see.   I'm seeing very consistent margin shifts to the left
+and to the right that seems to be around the urban/rural divide. And this has consistently happened throughout elections
+in this century.   
+
+As I have read elsewhere, Benford's law is a useful tool that can be used as a red flag on certain types of datasets 
+to indicate that the dataset is "unnatural."   The law holds that numbers in nature (population counts, rivers, observations, etc)
+should follow a predictable pattern. When it doesn't, Benford's law flags that closer investigation should occur.
+
+Also, there is debate about whether Benford's law applies to election results.  Much has been written about how it does not 
+apply to precinct level data as the precinct is artificially constrained on its size by definition.  However, my analysis shows 
+that US County Election results seem to conform to Benford's law very well.   This is true for most party results and for overall
+total counts.  Benford's law does seem to break down on margins which are expressed in percentages.
+
+Here are Benford's law calculations on the US Presidential Election Data since 2000. (2024 not year available). I'm using an error
+calculation to show the mean absolute error from expected results.   
+
+![benford](/img/benford_us_ele.jpg)
+
+If there are any "red flags", they would be on the "OTHER" candidate in 2004, the Democrats in 2004, 2000, and the
+Republicans in 2000.  Also, the Total count in 2008.  
+
+But, the overall mean absolute error is very low in all cases significantly less than 1% (Benford expresses ratios of digits in 
+percentages of total).  
+
+So, this analysis to me doesn't raise red flags.
+
+Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
+
+
+
 
 
 
