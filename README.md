@@ -275,6 +275,12 @@ percentages of total).
 
 So, this analysis to me doesn't raise red flags.
 
+The 'worst' election result as measured by mean absolute error vs. Benford's Law expected in the broad sense is the DEMOCRAT vote
+in 2004.   Plotting those first digit count frequencies vs. Benford's law expected shows very little error and is also 
+convincing to me that Benford's Law applies to county level election data.
+
+!['worst' broad result](/img/benford_error_worst.jpg)
+
 Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
 
 

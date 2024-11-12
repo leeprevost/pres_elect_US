@@ -136,4 +136,16 @@ ax.set_xlabel("Mean Absolute Error")
 plt.savefig("../img/benford_us_ele.jpg")
 ax.figure.show()
 
-
+plt.clf()
+worst_broad_error = benford_raw["DEMOCRAT"][2004]
+worst_broad_error.name = "DEMOCRAT, 2004"
+worst_broad_error.index = pd.Index(range(1,10))
+benford_range.name = "Benford Expected"
+ax = worst_broad_error.plot(kind='bar')
+benford_range.reset_index().plot(kind='line', ax=ax)
+ax.set_ylim((0, .35))
+ax.legend(labels = ["DEMOCRAT, 2004", "Benford Expected"])
+plt.suptitle("Benford Analysis on 'Worst' Broad Election Error (2000 - 2020)")
+plt.title("@leeprevost, source data: Harvard Dataverse, date: 11/12/2024",size = 'x-small')
+plt.savefig("../img/benford_error_worst.jpg")
+ax.figure.show()
