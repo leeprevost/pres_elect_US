@@ -285,7 +285,9 @@ As I was getting some "benford doesn't apply to elections" rants, I beg to diffe
 
 ![benford_facet](/img/benford_facet.jpg)
 
-As I'm mostly focused on the question about where all the Biden votes came from in 2020, I do find it interesting that the highest error rates in 2020 vs. Benford are for Democrats (but while still relatively low). These errors look visually like they are on digits 4 and 5.  This would mean counties whose democrat votes have the first digit of 4 or 5 which I think means suburban metro counties or very small counties (40-59 votes * 10 to the power of 0-4).    Later, I'll dig into those counties and look at high zscores over 2016.
+As I'm mostly focused on the question about where all the Biden votes came from in 2020, **_I do find it interesting_** that the highest error rates in 2020 vs. Benford are for Democrats (but while still relatively low). These errors look visually like they are on digits 4 and 5.  This would mean counties whose democrat votes have the first digit of 4 or 5 which I think means suburban metro counties or very small counties (40-59 votes * 10 to the power of 0-4).    Later, I'll dig into those counties and look at high zscores over 2016.
+
+More to come ....
 
 Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
 
