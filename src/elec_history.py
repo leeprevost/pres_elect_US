@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, PercentFormatter
 import matplotlib.pyplot as plt
 import requests
 from scipy.stats import zscore
-from benford import benford_error, digit_counts, benford_range
+from src.benford import benford_error, digit_counts, benford_range
+import seaborn as sns
 
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
@@ -149,3 +150,38 @@ plt.suptitle("Benford Analysis on 'Worst' Broad Election Error (2000 - 2020)")
 plt.title("@leeprevost, source data: Harvard Dataverse, date: 11/12/2024",size = 'x-small')
 plt.savefig("../img/benford_error_worst.jpg")
 ax.figure.show()
+
+
+def get_party_yr(ax):
+    text = ax.title._text
+    sp = text.split(" = ")
+    party = sp[-1]
+    yr = "".join((ch for ch in sp[1] if ch.isnumeric()))
+    return party, int(yr)
+
+pct_formatter = PercentFormatter(1)
+benford_data = benford_range.copy().reset_index(drop=True)
+benford_data.name = 'frequency'
+p_data = benford_raw.drop(["MARGIN","benford_expected", "OTHER", "LIBERTARIAN", "GREEN"], axis=1).melt(ignore_index=False).reset_index().rename(columns = {"value": "frequency"})
+g = sns.FacetGrid(p_data, col="party",  row="year")
+g.map_dataframe(sns.barplot, y="frequency", x='digits')
+g.despine(left=True)
+g.tight_layout()
+for ax in g.figure.get_axes():
+
+    benford_data.plot(kind='line', ax=ax)
+    ax.yaxis.set_major_formatter(pct_formatter)
+    mae = f"mae = {benford_mae.xs(get_party_yr(ax)):.2%}"
+    if mae:
+        ax.text(*(3, .20), s=mae)
+
+title = """
+Benford's Law on US Presidential Elections 2000-2020 County Level"""
+subtitle = "@leeprevost, source_data: Harvard Dataverse, 11/14/2024"
+
+g.figure.subplots_adjust(top=0.9, bottom=0.05) # adjust the Figure in rp
+g.figure.suptitle(title)
+plt.figtext(0.5, 0.01, subtitle, ha="center", fontsize=10)
+g.savefig("../img/benford_facet.jpg")
+
+g.figure.show()

@@ -281,6 +281,11 @@ convincing to me that Benford's Law applies to county level election data.
 
 !['worst' broad result](/img/benford_error_worst.jpg)
 
+As I was getting some "benford doesn't apply to elections" rants, I beg to differ.   Here are the plots of Benford Frequencies for all major parties and totals since 2000 (2024 to be added soon).  The mae is embeded in each facet and shows how low the absolute error is for the frequencies vs. Benford expected.  Hopefully this will put this little debate to rest.  I do agree that Benford doesn't seem to fit vote margins percentages as they are calculated vs. observed.  And it doesn't fit precinct level data as n is constrained by definition.   
+
+![benford_facet](/img/benford_facet.jpg)
+
+
 Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
 
 
