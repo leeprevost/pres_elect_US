@@ -1,12 +1,42 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error
+from itertools import pairwise
 
-def digit_counts(col):
+def first_digit_cleaned(col):
     # clean - dropna, convert to clean integers, make absolute value, drop decimals and leading zeroes
     col = col.dropna().convert_dtypes(convert_integer=True).abs().astype(str)
     col = col.str.replace("\.", "", regex=True).replace("^0+", "", regex=True)  # drops decimals
-    ct = col.str[0].astype(float).value_counts()
+    return col.str[0].astype(float)
+
+def digit_shift(df, periods=1, axis=0):
+    if axis==1:
+        df = df.T
+    digit = df.apply(first_digit_cleaned)
+    digit_shift = digit.shift(periods=periods, axis= 1 )
+    return digit.compare(digit_shift, align_axis=1, keep_shape=True, keep_equal=True, result_names = ("current", "previous"))
+
+
+def pair_cols_combine(df, level=(0,1)):
+    """use this with transform"""
+    df = df.T
+    g = df.groupby(level=level)
+    cols = []
+    for ndx, f in g:
+        curr, prev = f.index
+        curr_level = len(curr)
+
+        new_col  = pd.Series(map(tuple, f.T.values.tolist()), index=f.columns, name=curr[0:-(curr_level -len(level))])
+        cols.append(new_col)
+    return pd.concat(cols, axis=1)
+
+
+
+
+
+
+def digit_counts(col):
+    ct = first_digit_cleaned(col).value_counts()
     total = ct.sum()
     dist = ct/total
     dist.name = col.name

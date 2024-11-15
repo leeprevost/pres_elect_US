@@ -4,7 +4,7 @@ from matplotlib.ticker import FuncFormatter, PercentFormatter
 import matplotlib.pyplot as plt
 import requests
 from scipy.stats import zscore
-from src.benford import benford_error, digit_counts, benford_range
+from src.benford import benford_error, digit_counts, benford_range, digit_shift, pair_cols_combine
 import seaborn as sns
 
 
@@ -12,8 +12,9 @@ import seaborn as sns
 # direct link may be:  https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ# but requires accepting terms
 
 pres_history = r"C:\Users\lee\Downloads\countypres_2000-2020.csv"
+pop_est_2020_url = "https://www.ers.usda.gov/webdocs/DataFiles/48747/PopulationEstimates.xlsx?v=9655.3"
 
-
+pop_est_2020 = pd.read_excel(pop_est_2020_url, skiprows=4, dtype={'FIPStxt': str}).rename(columns={"FIPStxt": 'county_fips'}).set_index('county_fips', drop=True)
 #good source for 2024 reporting of state and county level results.
 nyt_api = "https://static01.nyt.com/elections-assets/2020/data/api/2020-11-03/national-map-page/national/president.json"
 
@@ -21,7 +22,21 @@ nyt_api = "https://static01.nyt.com/elections-assets/2020/data/api/2020-11-03/na
 r = requests.get(nyt_api)
 nyt = r.json()
 
-pres = pd.read_csv(pres_history)
+
+pres = pd.read_csv(pres_history, dtype={'county_fips': str})
+
+def fix_fips(s):
+    # zero padded two digit county followed by 3 digit zero padded county
+    s = str(s)
+    county = s[-3:]
+    state = s[0:-3]
+    return state.zfill(2) + county.zfill(3)
+
+#pres['county_fips'] = pres.county_fips.apply(fix_fips)
+#prob_fips = pres.loc[pres.county_fips.apply(len) == 7]
+
+# in spite of this, all of Kansas City, MO is in one 7 digit fips, not sure what to do with those.
+# left it in although this won't line up with pop data.
 
 fips_key = pres.groupby("county_fips").last()[['state', "state_po", "county_name"]]
 
@@ -125,6 +140,7 @@ benford_mae = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values
 benford_mae.name = "benford_mean_absolute_error"
 
 benford_raw = pres_pt.unstack(0).apply(digit_counts).assign(benford_expected=benford_range)
+benford_raw_ae = benford_raw.iloc[:, 0:-1].sub(benford_raw.benford_expected, axis=0).abs()
 benford_raw.to_csv("../tabs/benford_raw.csv")
 
 
@@ -185,3 +201,53 @@ plt.figtext(0.5, 0.01, subtitle, ha="center", fontsize=10)
 g.savefig("../img/benford_facet.jpg")
 
 g.figure.show()
+
+
+# now seeing an anomaly -- seeing some odd things in Benford charts for 2020, Democrats.  Drilling down
+
+benford_ae_DEM_2020 = benford_raw_ae['DEMOCRAT'][2020].sort_values()
+benford_ae_zscores = benford_raw_ae.drop("MARGIN" , axis=1).transform(lambda df: abs(zscore(df, axis=None)))
+benford_ae_zscores_2020 = benford_ae_zscores.xs(2020, level=1, axis=1)
+anomalous_zscores_2020 = benford_ae_zscores_2020 > 1.5
+
+# on major parties and totals, these include DEMs shifting to digit 4 from prev, Green shifting to 1, REPs shifting to 2, and Total shift to 3
+# question: focus on Total as this is observed?  But so are others.
+
+benford_ae_zscore_DEM_2020 = benford_ae_zscores["DEMOCRAT"][2020]
+digit_shift = pres_pt.unstack(0).transform(digit_shift)
+digit_shift.drop("MARGIN", axis=1, inplace=True)
+digit_shift = digit_shift.transform(pair_cols_combine)
+digit_shift_DEM_2020 = digit_shift["DEMOCRAT"][2020]
+
+def filt_shift(s, culprit_digits = (3,4)):
+    prev, curr = s
+    if prev==curr:
+        return False
+    elif curr in culprit_digits:
+        return True
+    else:
+        return False
+
+# rules compiled from zscores > 1.5 from anomalous_zscores_2020
+anomalies_2020_inputs = [
+    ("DEM Shift to Digit 4", "DEMOCRAT", "D4", 4),
+    ("GREEN Shift to 1", "GREEN", "G1", 1),
+    ("REP Shift to Digit 2", "REPUBLICAN", 'R2', 2),
+    ("Total Shift to Digit 3", "TOTAL", "T3", 3)
+]
+
+anomalous_sum = []
+for anomaly_tup in anomalies_2020_inputs:
+    desc, filt_key, colname, digit = anomaly_tup
+    mask = digit_shift_DEM_2020.apply(filt_shift, culprit_digits=(digit,))
+    votes_in_question = pres_pt[filt_key][2020].loc[mask].sum()
+    fips_sum = fips_key.groupby(["state", 'size'], observed=False)['county_name'].count().unstack(1)
+    fips_ct = mask.sum()
+    anomalous_sum.append((desc, colname, votes_in_question, fips_ct, fips_sum))
+
+anomalous_sum_print = pd.DataFrame((tup[0:-1] for tup in anomalous_sum ))
+
+# again, going back to my core question, where did Biden votes come from?  Focus on group D4 for now, acknowledging there are other questions.
+
+desc, colname, votes_in_question, fips_ct, fips_sum = anomalous_sum[0]
+mask = digit_shift_DEM_2020.apply(filt_shift, culprit_digits=(4,))
