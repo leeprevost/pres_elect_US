@@ -6,6 +6,18 @@ import requests
 from scipy.stats import zscore
 from src.benford import benford_error, digit_counts, benford_range, digit_shift, pair_cols_combine
 import seaborn as sns
+from functools import partial
+
+#sklearn
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import Normalizer, PowerTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import IsolationForest
+from sklearn.svm import OneClassSVM
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+
 
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
@@ -17,6 +29,7 @@ pop_est_2020_url = "https://www.ers.usda.gov/webdocs/DataFiles/48747/PopulationE
 pop_est_2020 = pd.read_excel(pop_est_2020_url, skiprows=4, dtype={'FIPStxt': str}).rename(columns={"FIPStxt": 'county_fips'}).set_index('county_fips', drop=True)
 #good source for 2024 reporting of state and county level results.
 nyt_api = "https://static01.nyt.com/elections-assets/2020/data/api/2020-11-03/national-map-page/national/president.json"
+
 
 
 r = requests.get(nyt_api)
@@ -32,6 +45,7 @@ def fix_fips(s):
     state = s[0:-3]
     return state.zfill(2) + county.zfill(3)
 
+zscore_all_cols = partial(zscore, axis=None, ddof=0)  # use ddof=0 if whole pop, 1 for just sample.
 #pres['county_fips'] = pres.county_fips.apply(fix_fips)
 #prob_fips = pres.loc[pres.county_fips.apply(len) == 7]
 
@@ -39,7 +53,9 @@ def fix_fips(s):
 # left it in although this won't line up with pop data.
 
 fips_key = pres.groupby("county_fips").last()[['state', "state_po", "county_name"]]
-
+fips_key_2_index = pd.MultiIndex.from_product((["demographics"], fips_key.columns))
+fips_key['fixed_fips'] = fips_key.reset_index().county_fips.apply(fix_fips).values
+fips_key = pd.merge(pop_est_2020.POP_ESTIMATE_2020, fips_key, right_on='fixed_fips', left_index=True)
 def log_bins(data, num_bins):
     data = data.dropna()
     log_min = np.log10(min(data))
@@ -57,6 +73,9 @@ formatter = FuncFormatter(millions)
 
 pres_pt = pres.pivot_table(index = ["year", "county_fips"], columns = "party", values = 'candidatevotes', aggfunc='sum')
 
+major_parties = ["DEMOCRAT", "REPUBLICAN"]
+major_total = major_parties + ["TOTAL"]
+
 total_cts = pres_pt[['DEMOCRAT', "REPUBLICAN"]].unstack(0).sum().unstack(0)
 ax = total_cts.iloc[3:, :].plot(kind='bar', color=['blue', 'red'], title = "US Presidential Election Popular Vote: Democrat vs. Republican (millions)\n@leeprevost, 11/8/2024")
 ax.yaxis.set_major_formatter(formatter)
@@ -68,6 +87,17 @@ ax.figure.savefig("../img/us_pop_vote.jpg")
 pres_pt = pres_pt.assign(TOTAL = pres_pt.sum(axis=1))
 pres_pt = pres_pt.assign(MARGIN = (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL)
 pres_pt.to_csv("pres_pt.csv")
+
+pres_pt_diff = pres_pt.groupby(level=1).diff()
+
+pres_pt_diff_2020 = pres_pt_diff.loc[2020]
+pres_pt_diff_2020_pop = pres_pt_diff_2020.drop("MARGIN", axis=1).join(fips_key.POP_ESTIMATE_2020)
+pres_pt_diff_2020_pop = pres_pt_diff_2020_pop.div(pres_pt_diff_2020_pop.POP_ESTIMATE_2020, axis=0)
+pres_pt_diff_2020_pop_zscore = pres_pt_diff_2020_pop.loc[:, major_total].dropna().transform(zscore_all_cols)
+
+vote_2020_DEM_pop_adj_outliers = (pres_pt_diff_2020_pop_zscore.DEMOCRAT > 2)
+
+#pres_pt_demo = pres_pt.unstack(0).join(pd.concat([fips_key], axis=1, keys=['demographics']))
 
 rec_total_votes = pres_pt.loc[[2016, 2020], "TOTAL"].unstack(0).max(axis=1).replace(0.0, np.nan)
 rec_total_votes.name = 'size'
@@ -141,7 +171,22 @@ benford_mae.name = "benford_mean_absolute_error"
 
 benford_raw = pres_pt.unstack(0).apply(digit_counts).assign(benford_expected=benford_range)
 benford_raw_ae = benford_raw.iloc[:, 0:-1].sub(benford_raw.benford_expected, axis=0).abs()
-benford_raw.to_csv("../tabs/benford_raw.csv")
+
+def pct_error(col, expected = benford_range):
+    return (col -expected)/expected
+
+benford_raw_pe = benford_raw.apply(pct_error)
+benford_raw_pe_zscore = benford_raw_pe.transform(zscore_all_cols)
+anomaly_col = (benford_raw_pe_zscore > 2).any()
+benford_raw_pe_anomaly_years = benford_raw.loc[:, anomaly_col]
+anomaly_mask = (benford_raw_pe_zscore > 2)[benford_raw_pe_anomaly_years.columns]
+
+
+def highlight_mask(s):
+    return ['color: red' if v else '' for v in s]
+
+benford_raw_pe_anomaly_years.to_excel("../tabs/benford_anomalous_years.xlsx")
+
 
 
 ax = benford_mae.dropna().sort_values().plot(kind='barh')
@@ -204,26 +249,40 @@ g.figure.show()
 
 
 # now seeing an anomaly -- seeing some odd things in Benford charts for 2020, Democrats.  Drilling down
-
+benford_2020 = benford_raw.xs(2020, level=1, axis=1).join(benford_range).drop("MARGIN", axis=1)
+benford_DEM_2020_pct_error = (benford_2020.DEMOCRAT - benford_range)/benford_range
 benford_ae_DEM_2020 = benford_raw_ae['DEMOCRAT'][2020].sort_values()
 benford_ae_zscores = benford_raw_ae.drop("MARGIN" , axis=1).transform(lambda df: abs(zscore(df, axis=None)))
 benford_ae_zscores_2020 = benford_ae_zscores.xs(2020, level=1, axis=1)
+
 anomalous_zscores_2020 = benford_ae_zscores_2020 > 1.5
 
-# on major parties and totals, these include DEMs shifting to digit 4 from prev, Green shifting to 1, REPs shifting to 2, and Total shift to 3
-# question: focus on Total as this is observed?  But so are others.
+# on major parties and totals, these include DEMs shifting to digit 4 (also from 5) from prev, Green shifting to 1, REPs shifting to 2, and Total shift to 3
 
+# am now thinking better to use percent error as it indicates larger benford error vs. expected.
 benford_ae_zscore_DEM_2020 = benford_ae_zscores["DEMOCRAT"][2020]
-digit_shift = pres_pt.unstack(0).transform(digit_shift)
-digit_shift.drop("MARGIN", axis=1, inplace=True)
-digit_shift = digit_shift.transform(pair_cols_combine)
-digit_shift_DEM_2020 = digit_shift["DEMOCRAT"][2020]
+digit_shift_data= pres_pt.unstack(0).transform(digit_shift)
+digit_shift_data.drop("MARGIN", axis=1, inplace=True)
+digit_shift_data = digit_shift_data.transform(pair_cols_combine)
+digit_shift_DEM_2020 = digit_shift_data["DEMOCRAT"][2020]
 
 def filt_shift(s, culprit_digits = (3,4)):
     prev, curr = s
     if prev==curr:
         return False
     elif curr in culprit_digits:
+        return True
+    else:
+        return False
+
+def filt_shift_fr_to(s, from_to = (5, 4)):
+    prev, curr = s
+    fr, to = from_to
+    if prev==curr:
+        return False
+    elif prev == fr:
+        return True
+    elif curr == to:
         return True
     else:
         return False
@@ -250,4 +309,130 @@ anomalous_sum_print = pd.DataFrame((tup[0:-1] for tup in anomalous_sum ))
 # again, going back to my core question, where did Biden votes come from?  Focus on group D4 for now, acknowledging there are other questions.
 
 desc, colname, votes_in_question, fips_ct, fips_sum = anomalous_sum[0]
-mask = digit_shift_DEM_2020.apply(filt_shift, culprit_digits=(4,))
+mask = digit_shift_DEM_2020.apply(filt_shift, culprit_digits=(4,5))
+mask2 = digit_shift_DEM_2020.apply(filt_shift_fr_to, from_to=(5,4))   # includes those that shifted from 5 in 2016
+anomalous_votes = pres_pt.loc[[2016,2020]].unstack(0).loc[mask2]["DEMOCRAT"]
+anomalous_votes = anomalous_votes.join(fips_key).reset_index()
+anomalous_votes = anomalous_votes.assign(fips_fixed = anomalous_votes.county_fips.apply(fix_fips))
+anomalous_votes = anomalous_votes.set_index("fips_fixed", drop=True).drop("POP_ESTIMATE_2020", axis=1).join(pop_est_2020.POP_ESTIMATE_2020)
+anomalous_votes = anomalous_votes.assign(vote_diff_pct_pop = (anomalous_votes[2020]-anomalous_votes[2016])/anomalous_votes.POP_ESTIMATE_2020)
+anomalous_votes = anomalous_votes.assign(vote_diff_pct_pop_zscore = zscore(anomalous_votes.vote_diff_pct_pop.dropna()))
+# Ok, am seeing some wild shift.  Zscores as high at 5 for vote margins over population!  Need to go back and do pop analysis on full dataset then come back to this.
+
+
+counties_on_both_lists_2020 = fips_key.loc[(mask & vote_2020_DEM_pop_adj_outliers)].drop("POP_ESTIMATE_2020", axis=1).join(pres_pt_diff_2020)
+
+
+# now lets build a training dataset for 2020 that flags outliers
+# margin_2020, margin_chg_2020, margins_chg_3, total_pct_pop, total_vote (needs log normalized), dem_vote_pct_pop, rep_vote_pct_pop, dem_pct_chg, rep_pct_chg
+
+d = dict(
+    margin = pres_pt.loc[2020, "MARGIN"],
+    margin_chg = pres_pt_diff.loc[2020, "MARGIN"],
+    margin_chg_3 = pres_pt_diff.groupby(level=1).rolling(3).mean().xs(2020, level=1)["MARGIN"].droplevel(1),
+    total_vote_pct_pop = pres_pt_diff_2020_pop["TOTAL"],
+    total_vote = pres_pt.loc[2020, "TOTAL"],
+    dem_vote_pct_pop = pres_pt_diff_2020_pop["DEMOCRAT"],
+    rep_vote_pct_pop = pres_pt_diff_2020_pop["REPUBLICAN"],
+    dem_pct_chg = pres_pt.groupby(level=1).pct_change(fill_method=None).loc[2020, "DEMOCRAT"],
+    rep_pct_chg = pres_pt.groupby(level=1).pct_change(fill_method=None).loc[2020, "REPUBLICAN"]
+)
+
+dataset = pd.DataFrame(d)
+mean = dataset.mean()
+dataset = dataset.fillna(mean)
+
+pt = PowerTransformer(method="box-cox")
+nt = Normalizer()
+
+exp_features = ["total_vote"]
+normal_features = set(dataset.columns) - set(exp_features)
+
+ct = ColumnTransformer([
+        ("lt", pt, exp_features),
+        ('nt', nt, list(normal_features))
+     ]
+)
+
+svm = OneClassSVM()
+isf = IsolationForest()
+cluster = KMeans(n_clusters = 5)
+
+pipe = Pipeline(
+    [("ct", ct), ("out_clf", isf)]
+)
+
+cluster_pipe = Pipeline(
+    [("ct", ct), ("cluster", cluster)]
+)
+
+
+# optimize for K using elbow and silhouette score
+#tests = []
+#for k in range(3,15):
+#    cluster_pipe.set_params(**{'cluster__n_clusters' : k})
+#    cluster_pipe.fit(dataset)
+#    wcss = cluster_pipe[1].inertia_
+#    sc = silhouette_score(dataset, cluster_pipe[1].labels_)
+#    tests.append((k, wcss, sc))
+
+# best appears to be 7
+
+#test_data = pd.DataFrame(tests, columns = ['k', 'wcss', 'sc']).set_index("k" ,drop=True)
+#ax = test_data.wcss.plot(kind='line')
+#test_data.sc.plot(kind='line', secondary_y=True, ax=ax)
+#ax.figure.show()
+
+cluster_pipe.set_params(**{'cluster__n_clusters' : 7})
+cluster_7 = pd.Series(cluster_pipe.fit_predict(dataset), index=dataset.index)
+
+outliers_isf = dataset.loc[pipe.fit_predict(dataset)==-1]
+
+
+outliers_isf = outliers_isf.join(fips_key)
+outliers_isf['shift'] = pd.cut(outliers_isf.margin, [-np.inf, 0, np.inf], labels=['left', 'right'])
+num_cols = list(outliers_isf.select_dtypes(include = np.number).columns)
+agg_func = dict(zip(
+    num_cols,
+    ['mean']*4 + ['sum']+["mean"]*4+['sum']
+    )
+)
+named_cols = dict(zip([tup for tup in agg_func.items()], agg_func.items()))
+agg_func.update(county_name = 'count')
+new_index = pd.MultiIndex.from_tuples(zip(agg_func.values(), num_cols+['county_name']))
+outliers_sum = outliers_isf.groupby('shift').agg(agg_func)
+outliers_sum.columns = new_index
+
+fips_key = fips_key.assign(cluster=cluster_7)
+num_cols = list(fips_key.select_dtypes(include=np.number).columns)
+
+size_sum = dataset.join(fips_key[['size', "POP_ESTIMATE_2020", "county_name"]]).groupby("size").agg(agg_func)
+size_sum.columns = list(named_cols.keys()) + [("county_name", "count")]
+
+cluster_named_agg = dict(
+    pop_mean = ("POP_ESTIMATE_2020", 'mean'),
+    county_ct = ("county_name", 'count'),
+    margin_mean = ("margin", 'mean'),
+    margin_std = ("margin", 'std'),
+    margin_chg_3 = ("margin_chg_3", 'mean'),
+    dem_vote_pct_pop = ('dem_vote_pct_pop', 'mean'),
+    dem_pct_chg = ("dem_pct_chg", "mean"),
+    rep_pct_chg = ('rep_pct_chg', 'mean')
+)
+
+cluster_sum = dataset.join(fips_key[['POP_ESTIMATE_2020', 'county_name', 'cluster']]).groupby("cluster").agg(**cluster_named_agg)
+
+cluster_describe = dataset.join(fips_key[['POP_ESTIMATE_2020', 'county_name', 'cluster']]).groupby("cluster").describe()
+
+cluster_7.name = 'cluster'
+plot_cols = ['margin', 'margin_chg', 'margin_chg_3', 'dem_pct_chg']
+plot_set = pd.concat([dataset[plot_cols], np.log(dataset.total_vote), cluster_7], axis=1)
+g = sns.pairplot(plot_set, hue='cluster')
+g.figure.show()
+
+ax = sns.catplot(plot_set, x='margin', y='cluster')
+
+# clusters on size
+# v_small - 0, 5 - small, 4 - wide_range, 3 - urban, 1 suburban
+
+# vote_margin - 4 - very left.  3 - moderate, hard left.  5 - middle and right, 0 - lean right, 6 -left, 2 - solid right 1 moderate

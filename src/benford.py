@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from itertools import pairwise
 
 def first_digit_cleaned(col):
@@ -18,15 +18,16 @@ def digit_shift(df, periods=1, axis=0):
 
 
 def pair_cols_combine(df, level=(0,1)):
-    """use this with transform"""
+    """use this with transform to put shift columns into a single tup col"""
     df = df.T
     g = df.groupby(level=level)
     cols = []
     for ndx, f in g:
         curr, prev = f.index
         curr_level = len(curr)
-
-        new_col  = pd.Series(map(tuple, f.T.values.tolist()), index=f.columns, name=curr[0:-(curr_level -len(level))])
+        list_of_tups = list(map(tuple, f.T.values.tolist()))
+        list_of_tups = [tuple((pre, self)) for self, pre in list_of_tups]
+        new_col  = pd.Series(list_of_tups, index=f.columns, name=curr[0:-(curr_level -len(level))])
         cols.append(new_col)
     return pd.concat(cols, axis=1)
 
@@ -49,9 +50,9 @@ def benford(n):
 ndx = pd.Index(range(1,10))
 benford_range = pd.Series([benford(n) for n in ndx], index=ndx, name = 'benford')
 
-def benford_error(col, metric=mean_absolute_error):
+def benford_error(col, metric=mean_absolute_percentage_error):
     try:
-        mae = metric(digit_counts(col), benford_range)
+        mae = metric(benford_range, digit_counts(col))
 
         return mae
     except:

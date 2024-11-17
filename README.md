@@ -270,14 +270,11 @@ calculation to show the mean absolute error from expected results.
 If there are any "red flags", they would be on the "OTHER" candidate in 2004, the Democrats in 2004, 2000, and the
 Republicans in 2000.  Also, the Total count in 2008.  
 
-But, the overall mean absolute error is very low in all cases significantly less than 1% (Benford expresses ratios of digits in 
+Using percent error, the [anomalous years](/tabs/benford_anomalous_years.xlsx) and candidate votes are:
+![anomalous_years](/img/benford_problem_years.jpg).  These years and digit errors are fairly substantial relative to all years.
+
+Even while some digit errors are high,  the overall mean absolute error is very low in all cases significantly less than 1% (Benford expresses ratios of digits in 
 percentages of total).  
-
-So, this analysis to me doesn't raise red flags.
-
-The 'worst' election result as measured by mean absolute error vs. Benford's Law expected in the broad sense is the DEMOCRAT vote
-in 2004.   Plotting those first digit count frequencies vs. Benford's law expected shows very little error and is also 
-convincing to me that Benford's Law applies to county level election data.
 
 !['worst' broad result](/img/benford_error_worst.jpg)
 
@@ -286,8 +283,6 @@ As I was getting some "benford doesn't apply to elections" rants, I beg to diffe
 ![benford_facet](/img/benford_facet.jpg)
 
 As I'm mostly focused on the question about where all the Biden votes came from in 2020, **_I do find it interesting_** that the highest error rates in 2020 vs. Benford are for Democrats (but while still relatively low). These errors look visually like they are on digits 4 and 5.  This would mean counties whose democrat votes have the first digit of 4 or 5 which I think means suburban metro counties or very small counties (40-59 votes * 10 to the power of 0-4).    Later, I'll dig into those counties and look at high zscores over 2016.
-
-More to come ....
 
 Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
 
