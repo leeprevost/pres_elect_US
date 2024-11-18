@@ -11,30 +11,30 @@ yet.
 Nevertheless, none of those critiques take away from the core rhetorical question: what explains the gap of votes for Biden 
 over 2016 in the 2020 election?  
 
-The question:
+The question that intrigued me:
 ![vote change from 2016-2020](/img/the_question.png)
 
-This question intrigued me.
 
-Also, inspired by the recent NYT visuals that show the "shift left/right" vectors on a map:
+The NYT visuals that show the "shift left/right" vectors on a map got me thinking about how to use these techniques to identify where those votes came from:
 ![NYT vector map](/img/Gbuf-iqXcBAXUaB.jpg)
 
 
 
 ## Methods:
-1) used python pandas to read presidential election data from 2000.   
-2) Created margin column that shows vote margins as a percent of total vote such that: 
+1) used python pandas to analyze presidential election data from 2000.   
+2) Created margin column that shows vote margins between two major parties (negative for Dem, positive for Rep). 
 
 data sourced from: [Harvard Dataverse sourced via MIT Election Lab](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ)
 
 
 ## Vote Margins
-(pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL
-negative values - democrat majority vote
-positive values -- republican majority vote
+- (pres_pt.REPUBLICAN - pres_pt.DEMOCRAT)/pres_pt.TOTAL
+- negative values - democrat majority vote
+- positive values -- republican majority vote
 
 ## Bins:
 Counties binned into roughly equal vote blocks of 5 which resulted in the following distribution (counts):
+
 
 | size   |   count |
 |:-------|--------:|
@@ -51,17 +51,13 @@ Counties binned into roughly equal vote blocks of 5 which resulted in the follow
 Very specifically, I wanted to focus on where the incremental votes for Joe Biden came from over the Democrat vote counts
 in the 2016 election, by county.   The raw counts for those vote diffs are in: [diff_16_20.csv](/tabs/diff_16_20.csv).  
 
-The top 30 counties whose votes shifted towards Biden include 4.24M incremental votes over the 2016 election.
+The top 30 counties [whose votes shifted towards Biden] include 4.24M incremental votes over the 2016 election.
 
 ![Where Did Additional Biden Votes Come From Over 2016?](/img/inc_20_demo_votes.jpg)
 
-Some incremental questions:
-~~- Were there unusual (ie. unnatural) margin shifts at county level in 20 over 2000-2016?~~
-- Possible use of Benford or Zscore to flush those out.  (@todo: Benford)
-~~- Which counties lurched leftward or rightward in an unpredictable or unnatural way (20 over 00-16)?~~
 
 ## Distribution of Margins By County
-Analyis to think about how to suss out the outliers, looking at what looks to be fairly normal distribution of margins across all
+In order to analyze the outliers, I studied the vote distributions.  Looking at what looks to be fairly normal distribution of margins across all
 3,156 counties.    This is a frequency count, not magnitude showing that most of US counties are steadily shifting right but 
 most of those are small.
 
@@ -74,7 +70,7 @@ Shifting left -- negative
 Outliers were determined by performing a zscore on entire margin_over_time dataset and selecting those 
 counties in 2020 that had an abs(zscore) > 2. This resulted in the [outliers_2020_vote.csv](/tabs/outliers_2020_vote.csv) tabulation.
 
-|                                     |        2000 |       2004 |       2008 |      2012 |      2016 |      2020 |
+|                                     |        2000 |       2004 |       2008 |      2012 |      2016 |      **2020** |
 |:------------------------------------|------------:|-----------:|-----------:|----------:|----------:|----------:|
 | ('DC', 'DISTRICT OF COLUMBIA', 'l') | -0.762034   | -0.798441  | -0.859246  | -0.836348 | -0.867763 | -0.867524 |
 | ('MD', "PRINCE GEORGE'S", 'l')      | -0.610984   | -0.643695  | -0.784873  | -0.805181 | -0.797259 | -0.805258 |
@@ -262,29 +258,41 @@ apply to precinct level data as the precinct is artificially constrained on its 
 that US County Election results seem to conform to Benford's law very well.   This is true for most party results and for overall
 total counts.  Benford's law does seem to break down on margins which are expressed in percentages.
 
-Here are Benford's law calculations on the US Presidential Election Data since 2000. (2024 not year available). I'm using an error
-calculation to show the mean absolute error from expected results.   
+Here are Benford's law calculations on the US Presidential Election Data since 2000. (2024 not yet available). I'm using an error
+calculation to show the mean absolute percent error from expected results meaning the mean percentage deviation of digit counts from expected.   
 
 ![benford](/img/benford_us_ele.jpg)
 
-If there are any "red flags", they would be on the "OTHER" candidate in 2004, the Democrats in 2004, 2000, and the
-Republicans in 2000.  Also, the Total count in 2008.  
+My first take from this is that:
+1) County election results are following Benford's Law very well.
+2) The mean percent error for each election looks fairly low with 'normal' noise due to the human process of counting votes.
 
-Using percent error, the [anomalous years](/tabs/benford_anomalous_years.xlsx) and candidate votes are:
-![anomalous_years](/img/benford_problem_years.jpg).  These years and digit errors are fairly substantial relative to all years.
-
-Even while some digit errors are high,  the overall mean absolute error is very low in all cases significantly less than 1% (Benford expresses ratios of digits in 
-percentages of total).  
+Even the worst broad result seems to conform to Benford fairly well.
 
 !['worst' broad result](/img/benford_error_worst.jpg)
 
-As I was getting some "benford doesn't apply to elections" rants, I beg to differ.   Here are the plots of Benford Frequencies for all major parties and totals since 2000 (2024 to be added soon).  The mae is embeded in each facet and shows how low the absolute error is for the frequencies vs. Benford expected.  Hopefully this will put this little debate to rest.  I do agree that Benford doesn't seem to fit vote margins percentages as they are calculated vs. observed.  And it doesn't fit precinct level data as n is constrained by definition.   
+As I was getting some "benford doesn't apply to elections" rants, I beg to differ.   Here are the plots of Benford Frequencies for all major parties and totals since 2000 (2024 to be added soon).  The mae is embeded in each facet and shows how low the absolute error is for the frequencies vs. Benford expected.  Hopefully this will put this little debate to rest.  I do agree that Benford doesn't seem to fit vote margins percentages as they are calculated vs. observed.  And it doesn't fit precinct level data as n is constrained by definition.
 
 ![benford_facet](/img/benford_facet.jpg)
 
-As I'm mostly focused on the question about where all the Biden votes came from in 2020, **_I do find it interesting_** that the highest error rates in 2020 vs. Benford are for Democrats (but while still relatively low). These errors look visually like they are on digits 4 and 5.  This would mean counties whose democrat votes have the first digit of 4 or 5 which I think means suburban metro counties or very small counties (40-59 votes * 10 to the power of 0-4).    Later, I'll dig into those counties and look at high zscores over 2016.
+# Closer Analysis of Benford at Digit Level
+**_Averages can hide the truth in a dataset._**   My next step was to isolate specific deviations from Benford expected at the digit and vote count levels.  To do this, I flagged all election years and all candidate votes whose digit percent error was more than 2 standard deviations from the mean.
 
-Raw results are in the [tabs](/tabs) as [benford_raw](/tabs/benford_raw.csv).
+The [anomalous years](/tabs/benford_anomalous_years.xlsx) and candidate votes are:
+![anomalous_years](/img/benford_problem_years.jpg).  Even while the means of all digits seem low, these years and digit errors are fairly substantial relative to all the rest.
+
+The actual percent error for the Democrat vote in 2020:
+![percent error 2020 Democrat](/img/benford_dem_2020_pe.jpg)
+
+Consider the weight of this Benford error rate analysis (2000-2020):
+1) This century, there have been only 5 vote counts where the error rate exceeds two standard deviations from the mean.
+2) Of the two major parties, the Democrat vote count is the only party whose votes have exceeded two standard deviations from the mean. That happened in 2012 and 2020.
+3) The election year 2020 had the most anomalies (3 of the 5).
+4) The anomalous votes for Democrats in 2020 were in counties where the digits shifted to 4 or from 5 in 2016.
+
+Next step, closer inspection of those counties whose votes shifted to 4 or from 5 in 2020.
+
+Raw results are in the [tabs](/tabs).
 
 
 
