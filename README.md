@@ -276,7 +276,7 @@ As I was getting some "benford doesn't apply to elections" rants, I beg to diffe
 ![benford_facet](/img/benford_facet.jpg)
 
 # Closer Analysis of Benford at Digit Level
-**_Averages can hide the truth in a dataset._**   My next step was to isolate specific deviations from Benford expected at the digit and vote count levels.  To do this, I flagged all election years and all candidate votes whose digit percent error was more than 2 standard deviations from the mean.
+**_Averages can hide the truth in a dataset._**   My next step was to isolate specific deviations from Benford expected at the digit and vote count levels.  To do this, I flagged all election years and all candidate votes whose digit percent error was more than 2 standard deviations (prob ~ 2%) from the mean.
 
 The [anomalous years](/tabs/benford_anomalous_years.xlsx) and candidate votes are:
 ![anomalous_years](/img/benford_problem_years.jpg).  Even while the means of all digits seem low, these years and digit errors are fairly substantial relative to all the rest.

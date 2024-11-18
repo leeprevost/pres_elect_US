@@ -169,8 +169,8 @@ plt.show()
 benford_mpe = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values(ascending=False)
 benford_mpe.name = "benford_mean_absolute_error"
 
-benford_raw = pres_pt.unstack(0).apply(digit_counts).assign(benford_expected=benford_range)
-benford_raw_pe = benford_raw.iloc[:, 0:-1].sub(benford_raw.benford_expected, axis=0).abs()
+benford_raw = pres_pt.unstack(0).drop("MARGIN", axis=1).apply(digit_counts).assign(benford_expected=benford_range)
+benford_raw_pe = benford_raw.sub(benford_raw.benford_expected, axis=0).abs()
 
 def pct_error(col, expected = benford_range):
     return (col -expected)/expected
@@ -178,9 +178,11 @@ def pct_error(col, expected = benford_range):
 #benford_raw_pe = benford_raw.apply(pct_error)
 benford_raw_pe_zscore = benford_raw_pe.transform(zscore_all_cols)
 anomaly_col = (benford_raw_pe_zscore > 2).any()
-benford_raw_pe_anomaly_years = benford_raw.drop("benford_expected", axis=1).loc[:, anomaly_col]
+benford_raw_pe_anomaly_years = benford_raw.drop(["benford_expected"], axis=1).loc[:, anomaly_col]
+benford_raw_pe_anomaly_years_major = benford_raw_pe_anomaly_years[major_total]
 anomaly_mask = (benford_raw_pe_zscore > 2)[benford_raw_pe_anomaly_years.columns]
 
+# prob better to filter down to major parties, totals here.
 
 def highlight_mask(s):
     return ['color: red' if v else '' for v in s]
@@ -222,7 +224,7 @@ def get_party_yr(ax):
 pct_formatter = PercentFormatter(1)
 benford_data = benford_range.copy().reset_index(drop=True)
 benford_data.name = 'frequency'
-p_data = benford_raw.drop(["MARGIN","benford_expected", "OTHER", "LIBERTARIAN", "GREEN"], axis=1).melt(ignore_index=False).reset_index().rename(columns = {"value": "frequency"})
+p_data = benford_raw.drop(["benford_expected", "OTHER", "LIBERTARIAN", "GREEN"], axis=1).melt(ignore_index=False).reset_index().rename(columns = {"value": "frequency"})
 g = sns.FacetGrid(p_data, col="party",  row="year")
 g.map_dataframe(sns.barplot, y="frequency", x='digits')
 g.despine(left=True)
@@ -248,10 +250,10 @@ g.figure.show()
 
 
 # now seeing an anomaly -- seeing some odd things in Benford charts for 2020, Democrats.  Drilling down
-benford_2020 = benford_raw.xs(2020, level=1, axis=1).join(benford_range).drop("MARGIN", axis=1)
+benford_2020 = benford_raw.xs(2020, level=1, axis=1).join(benford_range)
 benford_DEM_2020_pct_error = (benford_2020.DEMOCRAT - benford_range)/benford_range
 benford_pe_DEM_2020 = benford_raw_pe['DEMOCRAT'][2020].sort_values()
-benford_pe_zscores = benford_raw_pe.drop("MARGIN" , axis=1).transform(lambda df: abs(zscore(df, axis=None)))
+benford_pe_zscores = benford_raw_pe.transform(lambda df: abs(zscore(df, axis=None)))
 benford_pe_zscores_2020 = benford_pe_zscores.xs(2020, level=1, axis=1)
 
 anomalous_zscores_2020 = benford_pe_zscores_2020 > 1.5
