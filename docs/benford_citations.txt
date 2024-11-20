@@ -1,0 +1,12 @@
+article that suggests MAD (mean absolute deviation) best error method (equiv to MAE in sklearn)
+https://www.benfordonline.net/ARTICLES/banks_00.pdf
+
+Mark J. Nigrini, Ph.D., in his new
+book, “Digital Analysis Using Benford’s Law” (Global Audit Publications,
+2000) suggests the use of Mean Absolute Deviation (MAD) as the best
+measure of closeness of fit for DFA
+
+Close conformity — 0.000 to 0.004
+Acceptable conformity — 0.004 to 0.008
+Marginally acceptable conformity — 0.008 to 0.012
+Nonconformity — greater than 0.012

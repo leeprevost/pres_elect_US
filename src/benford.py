@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from itertools import pairwise
 
+# see docs/benford_citations.txt, using mae as error scorer.
 def first_digit_cleaned(col):
     # clean - dropna, convert to clean integers, make absolute value, drop decimals and leading zeroes
     col = col.dropna().convert_dtypes(convert_integer=True).abs().astype(str)
@@ -32,7 +33,15 @@ def pair_cols_combine(df, level=(0,1)):
     return pd.concat(cols, axis=1)
 
 
-
+mad_range = np.array([.004, .008, .012, np.inf])
+mad_color = ['green', 'lightgreen', 'yellow', 'red']
+mad_conform_label = ['High', 'Acceptable', "Marginal", "Non"]
+def get_mad(val, color_only=False):
+    i = np.searchsorted(mad_range, val)
+    if color_only:
+        return mad_color[i]
+    else:
+        return mad_conform_label[i], mad_color[i]
 
 
 
@@ -50,13 +59,16 @@ def benford(n):
 ndx = pd.Index(range(1,10))
 benford_range = pd.Series([benford(n) for n in ndx], index=ndx, name = 'benford')
 
-def benford_error(col, metric=mean_absolute_percentage_error):
+def benford_error(col, metric=mean_absolute_error):
     try:
         mae = metric(benford_range, digit_counts(col))
 
         return mae
     except:
         return np.nan
+
+
+
 
 
 

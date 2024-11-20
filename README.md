@@ -294,7 +294,14 @@ Next step, closer inspection of those counties whose votes shifted to 4 or from 
 
 Raw results are in the [tabs](/tabs).
 
+<div w3-include-html="tabs/benford_anomaly.html"></div>
 
+<link rel="import" href="tabs/benford_anomaly.html"> 
+
+
+```{r, echo=FALSE}
+htmltools::tags$iframe(title = "My embedded document", src = "tabs/benford_anomaly.html")
+```
 
 
 

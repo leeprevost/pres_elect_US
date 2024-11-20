@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from matplotlib.ticker import FuncFormatter, PercentFormatter
+from matplotlib import colormaps
 import matplotlib.pyplot as plt
 import requests
 from scipy.stats import zscore
@@ -17,7 +18,7 @@ from sklearn.svm import OneClassSVM
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-
+cmap = colormaps["RdYlGn_r"]
 
 
 #date source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
@@ -165,36 +166,66 @@ plt.suptitle("Distribution of Vote Margins By County\n(negative = D, positive = 
 plt.savefig("../img/distribution_vote_margins_county.jpg")
 plt.show()
 
-# now do benford law calcs
-benford_mpe = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values(ascending=False)
-benford_mpe.name = "benford_mean_absolute_error"
+# shifting to mae - see docs/benford_citations.txt
+
+
+benford_me = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values(ascending=False)
+benford_me.name = "benford_mean_absolute_error"
 
 benford_raw = pres_pt.unstack(0).drop("MARGIN", axis=1).apply(digit_counts).assign(benford_expected=benford_range)
-benford_raw_pe = benford_raw.sub(benford_raw.benford_expected, axis=0).abs()
+benford_raw_ae = benford_raw.sub(benford_raw.benford_expected, axis=0)
+benford_raw_ae.name = 'benford ae'
 
 def pct_error(col, expected = benford_range):
     return (col -expected)/expected
 
-#benford_raw_pe = benford_raw.apply(pct_error)
-benford_raw_pe_zscore = benford_raw_pe.transform(zscore_all_cols)
-anomaly_col = (benford_raw_pe_zscore > 2).any()
-benford_raw_pe_anomaly_years = benford_raw.drop(["benford_expected"], axis=1).loc[:, anomaly_col]
-benford_raw_pe_anomaly_years_major = benford_raw_pe_anomaly_years[major_total]
-anomaly_mask = (benford_raw_pe_zscore > 2)[benford_raw_pe_anomaly_years.columns]
+benford_raw_pe = benford_raw.transform(pct_error)
+benford_raw_pe.name = 'benford pe'
 
+ax = pd.concat([benford_raw_ae.mean(axis=1), benford_raw_pe.mean(axis=1)], axis=1).plot(kind='line')
+ax.figure.show()
+
+#benford_raw_pe = benford_raw.apply(pct_error)
+benford_raw_ae_zscore = benford_raw_ae.transform(zscore_all_cols)
+anomaly_col = (benford_raw_ae_zscore > 2).any()
+benford_raw_ae_anomaly_years = benford_raw.drop(["benford_expected"], axis=1).loc[:, anomaly_col]
+anomaly_mask = (benford_raw_ae_zscore > 2)[benford_raw_ae_anomaly_years.columns]
+
+def pretty_table(styler):
+
+    cell_hover = {  # for row hover use <tr> instead of <td>
+        'selector': 'td:hover',
+        'props': [('background-color', '#ffffb3')]
+    }
+    index_names = {
+    'selector': '.index_name',
+    'props': 'font-style: italic; color: darkgrey; font-weight:normal;'
+    }
+    headers = {
+    'selector': 'th:not(.index_name)',
+    'props': 'background-color: #000066; color: white;'
+    }
+    styler.set_table_styles([cell_hover, index_names, headers])
+    styler.set_caption("Benford Anomalies 2000-2020")
+    styler.background_gradient(cmap=cmap, axis=None)
+    styler.format_index('{:.1f}')
+    styler.format('{:.2%}')
+    return styler
+
+benford_raw_ae.loc[:, anomaly_col].abs().style.pipe(pretty_table).to_html("../tabs/benford_anomaly.html")
 # prob better to filter down to major parties, totals here.
 
 def highlight_mask(s):
     return ['color: red' if v else '' for v in s]
 
-benford_raw_pe_anomaly_years.to_excel("../tabs/benford_anomalous_years.xlsx")
+benford_raw_ae_anomaly_years.to_excel("../tabs/benford_anomalous_years.xlsx")
 
 
-ax = benford_mpe.dropna().sort_values().plot(kind='barh')
+ax = benford_me.dropna().sort_values().plot(kind='barh')
 plt.suptitle("Benford's Law US Presidential Elections (2000-2020)")
 plt.title("@leeprevost, source data: Harvard Dataverse, 11/12/2024", size='x-small')
 plt.tight_layout(pad=1.4)
-ax.set_xlabel("Mean Absolute Percent Error")
+ax.set_xlabel("Mean Absolute Error")
 #plt.xticks(rotation=90, ha='right')
 plt.savefig("../img/benford_us_ele.jpg")
 ax.figure.show()
@@ -233,7 +264,7 @@ for ax in g.figure.get_axes():
 
     benford_data.plot(kind='line', ax=ax)
     ax.yaxis.set_major_formatter(pct_formatter)
-    mae = f"mpe = {benford_mpe.xs(get_party_yr(ax)):.2%}"
+    mae = f"mae = {benford_me.xs(get_party_yr(ax)):.2%}"
     if mae:
         ax.text(*(3, .20), s=mae)
 
@@ -251,23 +282,22 @@ g.figure.show()
 
 # now seeing an anomaly -- seeing some odd things in Benford charts for 2020, Democrats.  Drilling down
 benford_2020 = benford_raw.xs(2020, level=1, axis=1).join(benford_range)
-benford_DEM_2020_pct_error = (benford_2020.DEMOCRAT - benford_range)/benford_range
-benford_pe_DEM_2020 = benford_raw_pe['DEMOCRAT'][2020].sort_values()
-benford_pe_zscores = benford_raw_pe.transform(lambda df: abs(zscore(df, axis=None)))
-benford_pe_zscores_2020 = benford_pe_zscores.xs(2020, level=1, axis=1)
+benford_DEM_2020_error = (benford_2020.DEMOCRAT - benford_range)
+benford_ae_DEM_2020 = benford_raw_ae['DEMOCRAT'][2020].sort_values()
+benford_ae_zscores = benford_raw_ae.transform(zscore_all_cols).abs()
+benford_ae_zscores_2020 = benford_ae_zscores.xs(2020, level=1, axis=1)
 
-anomalous_zscores_2020 = benford_pe_zscores_2020 > 1.5
+anomalous_zscores_2020 = benford_ae_zscores_2020 > 1.5
 
 
-ax  = benford_DEM_2020_pct_error.plot(kind='barh')
-ax.figure.suptitle("Benford's Law Percent Error Democrat Vote 2020")
+ax  = benford_DEM_2020_error.plot(kind='barh')
+ax.figure.suptitle("Benford's Law Error Democrat Vote 2020")
 ax.set_title("@leeprevost, source: Harvard Dataverse, 11/18/2024")
 ax.figure.savefig("../img/benford_dem_2020_pe.jpg")
 ax.figure.show()
 # on major parties and totals, these include DEMs shifting to digit 4 (also from 5) from prev, Green shifting to 1, REPs shifting to 2, and Total shift to 3
 
-# am now thinking better to use percent error as it indicates larger benford error vs. expected.
-benford_pe_zscore_DEM_2020 = benford_pe_zscores["DEMOCRAT"][2020]
+benford_ae_zscore_DEM_2020 = benford_ae_zscores["DEMOCRAT"][2020]
 digit_shift_data= pres_pt.unstack(0).transform(digit_shift)
 digit_shift_data.drop("MARGIN", axis=1, inplace=True)
 digit_shift_data = digit_shift_data.transform(pair_cols_combine)
