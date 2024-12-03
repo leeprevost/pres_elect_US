@@ -2,15 +2,17 @@
 **_Averages can hide the truth in a dataset._**   My next step was to isolate specific deviations from Benford expected at the digit and vote count levels.  To do this, I flagged all election years and all candidate votes whose digit percent error was more than 2 standard deviations (prob ~ 2%) from the mean.
 
 The [anomalous years](/tabs/benford_anomalous_years.xlsx) and candidate votes are:
+
 ![anomalous_years](../img/benford_problem_years.jpg).  
 
 Even while the means of all digits seem low, these years and digit errors are fairly substantial relative to all the rest.
 
-![](..\img\benford_anomaly_chart.png)
+![](../img/benford_anomaly_chart.png)
 
 Digit 4 and 5 on Democrat Vote 2020 really jump out at me.
 
 The actual percent error for the Democrat vote in 2020:
+
 ![percent error 2020 Democrat](../img/benford_dem_2020_pe.jpg)
 
 Consider the weight of this Benford error rate analysis (2000-2020):
