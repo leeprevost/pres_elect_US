@@ -130,6 +130,7 @@ d = dict(
 
 dataset = pd.DataFrame(d)
 dataset = dataset.assign(margin_chg_grew = (dataset.margin_chg - dataset.margin_chg_3).abs() > 0)
+dataset = dataset.assign(margin_chg_shift = dataset.margin_chg-dataset.margin_chg_3)
 mean = dataset.mean()
 dataset = dataset.fillna(mean)
 
@@ -234,7 +235,8 @@ ax = sns.catplot(plot_set, x='margin', y='cluster')
 
 # clusters on size
 # v_small - 0, 5 - small, 4 - wide_range, 3 - urban, 1 suburban
-
+dataset = dataset.join(cluster_7).assign(log_pop=np.log(dataset.total_vote))
+corr = dataset.corr()
 # vote_margin - 4 - very left.  3 - moderate, hard left.  5 - middle and right, 0 - lean right, 6 -left, 2 - solid right 1 moderate
 
 # I just added random_state to Kmeans so class labels will be reproducible.
@@ -250,3 +252,10 @@ cluster_desc = """
 cluster_desc = [tuple(item.lstrip().split(', ')) for item in cluster_desc][1:-1]
 cluster_desc = pd.DataFrame(cluster_desc, columns = ['cluster', 'urban', 'political', '16_20_vote_flips']).astype({"cluster": int}).set_index('cluster', drop =True)
 cluster_desc.to_csv("../tabs/cluster_desc.csv")
+
+yr_ndx = set(pres_pt.index.get_level_values(0))
+p_data = pres_pt.unstack(0)["MARGIN"].join(mask).join(cluster_7).melt(value_vars=yr_ndx, id_vars=["BAG", 'cluster'], var_name='year', value_name = 'margin')
+ax = sns.lineplot(data=p_data, x="year", y='margin', hue="cluster")
+ax.figure.show()
+
+cond = (dataset.benford_anom)

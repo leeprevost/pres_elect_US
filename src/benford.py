@@ -1,18 +1,22 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
-from src import vote_data
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score
+from src import vote_data, CACHE
 import utils
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import zscore
+from scipy.stats import zscore, rv_continuous, chisquare
+from functools import partial
 
 # see docs/benford_citations.txt, using mae as error scorer.
-def first_digit_cleaned(col):
-    # clean - dropna, convert to clean integers, make absolute value, drop decimals and leading zeroes
+
+def get_digit(col, k=1):
     col = col.dropna().convert_dtypes(convert_integer=True).abs().astype(str)
     col = col.str.replace("\.", "", regex=True).replace("^0+", "", regex=True)  # drops decimals
-    return col.str[0].astype(float)
+    return col.str[k-1].astype(float)
+
+first_digit_cleaned = partial(get_digit, k=1)
+
 
 def digit_shift(df, periods=1, axis=0):
     if axis==1:
@@ -58,7 +62,21 @@ def digit_counts(col):
     return dist
 
 def benford(n):
+
     return np.log10(1 + 1/n)
+
+prob_2nd = np.array((12.0,11.4, 10.9,10.4,10.0,9.7, 9.3, 9.0,8.8, 8.5))/100
+def benford_second(n):
+
+    return prob_2nd[n]
+
+class benford_first_gen(rv_continuous):
+    "Benford first digit distribution"
+    def _pdf(self, x):
+        return benford(x)
+
+benford_first = benford_first_gen(name='benford_first')
+
 
 ndx = pd.Index(range(1,10))
 benford_range = pd.Series([benford(n) for n in ndx], index=ndx, name = 'benford')
@@ -79,6 +97,20 @@ fips_key = vote_data.fips_key
 
 
 benford_me = pres_pt.unstack(0).apply(benford_error).drop("MARGIN").sort_values(ascending=False)
+benford_2nd = pres_pt.unstack(0).apply(get_digit, k=2).apply(lambda col: col.value_counts()).drop("MARGIN", axis=1)
+benford_1st = pres_pt.unstack(0).drop("MARGIN", axis=1).apply(get_digit, k=1).apply(lambda col: col.value_counts())
+chi_sq_1st = benford_1st.apply(lambda col: chisquare(f_obs=col, f_exp = col.sum() * benford_range)).rename({0:'cs', 1: 'p_value'}).T
+ch_sq_2nd =benford_2nd.apply(lambda col: chisquare(f_obs=col, f_exp = col.sum() * prob_2nd)).rename({0: 'cs', 1: "p_value"}).T
+benford_2nd_errors = (benford_2nd/benford_2nd.sum()).sub(prob_2nd, axis=0)
+benford_2nd_errors_zscore = benford_2nd_errors.transform(utils.zscore_all_cols)
+worst_10_that_fit_1st = chi_sq_1st.loc[chi_sq_1st.p_value <= .05]['cs'].drop("OTHER").nlargest(10)
+worst_10_that_fit_2nd = ch_sq_2nd.loc[ch_sq_2nd.p_value <= .05]['cs'].nlargest(10)
+worst = pd.DataFrame({"1st": worst_10_that_fit_1st, '2nd': worst_10_that_fit_2nd})
+
+benford_2nd_20 = benford_2nd['DEMOCRAT'][2020]
+
+
+benford_r2 = pres_pt.unstack(0).apply(benford_error, metric=r2_score).drop("MARGIN").sort_values(ascending=False)
 benford_me.name = "benford_mean_absolute_error"
 
 benford_raw = pres_pt.unstack(0).drop("MARGIN", axis=1).apply(digit_counts).assign(benford_expected=benford_range)
@@ -172,7 +204,7 @@ for ax in g.figure.get_axes():
 
     benford_data.plot(kind='line', ax=ax)
     ax.yaxis.set_major_formatter(utils.pct_formatter)
-    mae = f"mae = {benford_me.xs(get_party_yr(ax)):.2%}"
+    mae = f"mae = {benford_me.xs(get_party_yr(ax)):.2%}\nr2 = {benford_r2.xs(get_party_yr(ax)):.2}"
     if mae:
         ax.text(*(3, .20), s=mae)
 
@@ -257,6 +289,7 @@ anomalous_sum_print = pd.DataFrame((tup[0:-1] for tup in anomalous_sum ))
 
 desc, colname, votes_in_question, fips_ct, fips_sum = anomalous_sum[0]
 mask_45 = digit_shift_DEM_2020.apply(filt_shift, culprit_digits=(4,5)) #casts wider net and could include double jumps or odd jumps
+mask_45.name = "BAG"
 mask_5_to_4 = digit_shift_DEM_2020.apply(filt_shift_fr_to, from_to=(5,4))   # includes those that shifted from 5 in 2016
 anomalous_votes = pres_pt.loc[[2016,2020]].unstack(0).loc[mask_45]["DEMOCRAT"]
 anomalous_votes = anomalous_votes.join(fips_key).reset_index()
@@ -265,4 +298,7 @@ anomalous_votes = anomalous_votes.set_index("fips_fixed", drop=True).drop("POP_E
 anomalous_votes = anomalous_votes.assign(vote_diff_pct_pop = (anomalous_votes[2020]-anomalous_votes[2016])/anomalous_votes.POP_ESTIMATE_2020)
 anomalous_votes = anomalous_votes.assign(vote_diff_pct_pop_zscore = zscore(anomalous_votes.vote_diff_pct_pop.dropna()))
 # Ok, am seeing some wild shift.  Zscores as high at 5 for vote margins over population!  Need to go back and do pop analysis on full dataset then come back to this.
+anomalous_votes = anomalous_votes.assign(pct_change_16_20= anomalous_votes[[2016,2020]].pct_change(axis=1).iloc[:, 1])
 
+anomalous_votes.to_hdf(CACHE, key="anom_20_dem_votes", format='table')
+anomalous_votes.to_csv("../tabs/anom_20_dem.csv")

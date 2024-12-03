@@ -2,22 +2,18 @@ import pandas as pd
 import numpy as np
 
 from src import census
-
+from utils import fix_fips
+import src
 pres_history = r"C:\Users\lee\Downloads\countypres_2000-2020.csv"
 
-
+cite = "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ"
 
 pop_est_2020 = census.pop_est_2020
 
 
 pres = pd.read_csv(pres_history, dtype={'county_fips': str})
 
-def fix_fips(s):
-    # zero padded two digit county followed by 3 digit zero padded county
-    s = str(s)
-    county = s[-3:]
-    state = s[0:-3]
-    return state.zfill(2) + county.zfill(3)
+
 
 #pres['county_fips'] = pres.county_fips.apply(fix_fips)
 #prob_fips = pres.loc[pres.county_fips.apply(len) == 7]
@@ -61,3 +57,4 @@ eq_vote_cuts = sorted(rec_total_votes.loc[((cum_sum % tot_votes_bin).pct_change(
 labels = ['xs', 's', 'm', "l", 'xl']
 fips_key = fips_key.join(pd.cut(rec_total_votes, bins = eq_vote_cuts, labels = ['xs', 's', 'm', 'l', 'xl'])).rename(columns = {'totvotes': "size"})
 
+fips_key.to_hdf(src.CACHE, key = 'fips_key', format='table')
