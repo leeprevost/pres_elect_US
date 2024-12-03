@@ -15,7 +15,8 @@ Dr. Jen Golbeck [scolded](https://x.com/jengolbeck/status/1852531635662565599) u
 Of course, she did this right before election day (Nov 1) and used right leaning examples (which were wrong) as her exhibits.
 
 Using Benford's Law to calculate the frequency of first digits on county level election data:
-![benford_facet](C:\Users\lee\PycharmProjects\pres_elect_US\img\benford_facet.jpg)
+
+![benford_facet](../img/benford_facet.jpg)
 
 Its very difficult for me to see how Benford doesn't fit the county level data.  I'm certinaly open to argument from experts
 rather than partisans.   Blue line is the expected result.  Bars are the actual result.  Error statistics 
@@ -65,12 +66,12 @@ For my purposes, the p-value on the Democrat vote in 2020 rules out the null hyp
 a higher than normal error rate.
 
 The election digit count frequencies and their errorbars at 2$\sigma$ are shown plotted with the expected Benford frequencies (orange):
-![](C:\Users\lee\PycharmProjects\pres_elect_US\img\election_freq.jpg)
+![](../img/election_freq.jpg)
 
 It looks like a decent fit to me!
 
 But, the 2020 Democrat vote looks off to me -- particularly on digit 4/5.  
-![](C:\Users\lee\PycharmProjects\pres_elect_US\img\benford_20_dem.jpg)
+![](../img/benford_20_dem.jpg)
 
 Lets investigate further.
 
